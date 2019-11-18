@@ -141,7 +141,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
      * This function remove rules for a host
      */
     private void removeRules(Host host) {
-    	
+
     	Map<Long,Integer> portMap = routeMap.get(host.getSwitch().getId());
     	
     	//construct match criteria
@@ -226,8 +226,10 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 	}
 	
 	private void updateAll() {
-		for(Host h: this.getHosts()) {
-			removeRules(h);
+		if(routeMap!=null) {
+			for(Host h: this.getHosts()) {
+				removeRules(h);
+			}
 		}
 		bellman_ford();
 		for(Host h: this.getHosts()) {
@@ -241,7 +243,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 	private void bellman_ford() {
 		this.routeMap = new ConcurrentHashMap<Long,Map<Long, Integer>>();
 		Map<Long, IOFSwitch> sws = this.getSwitches();
-		List<Link> links = new ArrayList<Link>(this.getLinks());
+		Collection<Link> links = this.getLinks();
 		for(Long dstSw: sws.keySet()) {
 			
 			Map<Long,Integer> dis = new ConcurrentHashMap<Long,Integer>();
@@ -269,6 +271,9 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 			}
 			
 			routeMap.put(dstSw,pre);
+			for(Map.Entry<Long,Integer> entry: pre.entrySet()) {
+				System.out.println(entry.getKey()+" "+entry.getValue());
+			}
 		}
 	}
 	
