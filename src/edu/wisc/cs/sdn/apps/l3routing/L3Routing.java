@@ -241,7 +241,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 	private void bellman_ford() {
 		this.routeMap = new ConcurrentHashMap<Long,Map<Long, Integer>>();
 		Map<Long, IOFSwitch> sws = this.getSwitches();
-		List<Link> links = new ArrayList<>(this.getLinks());
+		List<Link> links = new ArrayList<Link>(this.getLinks());
 		for(Long dstSw: sws.keySet()) {
 			
 			Map<Long,Integer> dis = new ConcurrentHashMap<Long,Integer>();
