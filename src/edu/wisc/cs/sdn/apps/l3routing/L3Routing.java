@@ -121,6 +121,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
      */
     private void installRules(Host host) {
     	
+    	
     	Map<Long,Integer> portMap = routeMap.get(host.getSwitch().getId());
     	
     	//construct match criteria
@@ -135,6 +136,10 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
     		
     		SwitchCommands.installRule(this.getSwitches().get(swId),this.table,SwitchCommands.DEFAULT_PRIORITY,match,new ArrayList<OFInstruction>(Arrays.asList(inst)));
     	}
+    	
+    	OFAction act = new OFActionOutput(host.getPort());
+    	OFInstruction inst = new OFInstructionApplyActions(new ArrayList<OFAction>(Arrays.asList(act)));
+    	SwitchCommands.installRule(host.getSwitch(),this.table,SwitchCommands.DEFAULT_PRIORITY,match,new ArrayList<OFInstruction>(Arrays.asList(inst)));
     }
     
     /**
