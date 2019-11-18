@@ -272,7 +272,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 			
 			routeMap.put(dstSw,pre);
 			for(Map.Entry<Long,Integer> entry: pre.entrySet()) {
-				System.out.println(entry.getKey()+" "+entry.getValue());
+				log.info(entry.getKey()+" "+entry.getValue());
 			}
 		}
 	}
