@@ -7,10 +7,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.openflow.protocol.*;
+import org.openflow.protocol.action.OFAction;
+import org.openflow.protocol.action.OFActionOutput;
+import org.openflow.protocol.instruction.OFInstruction;
+import org.openflow.protocol.instruction.OFInstructionApplyActions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.wisc.cs.sdn.apps.util.Host;
+import edu.wisc.cs.sdn.apps.util.SwitchCommands;
 
 import net.floodlightcontroller.core.IFloodlightProviderService;
 import net.floodlightcontroller.core.IOFSwitch;
@@ -50,6 +56,8 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
     
     // Map of hosts to devices
     private Map<IDevice,Host> knownHosts;
+    
+    private Map<Long,Map<Long, Integer>> routeMap; 
 
 	/**
      * Loads dependencies and initializes data structures.
@@ -106,6 +114,45 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
      */
     private Collection<Link> getLinks()
     { return linkDiscProv.getLinks().keySet(); }
+    
+    
+    /**
+     * This function install rules for a host
+     */
+    private void installRules(Host host) {
+    	
+    	Map<Long,Integer> portMap = routeMap.get(host.getSwitch().getId());
+    	
+    	//construct match criteria
+    	OFMatch match = new OFMatch();	
+    	match.setDataLayerType(OFMatch.ETH_TYPE_IPV4);
+    	match.setNetworkDestination(host.getIPv4Address());
+    	   	
+    	for(Long swId:portMap.keySet()) {
+    		//construct instruct
+        	OFAction act = new OFActionOutput(portMap.get(swId));
+        	OFInstruction inst = new OFInstructionApplyActions(new ArrayList<OFAction>(Arrays.asList(act)));
+    		
+    		SwitchCommands.installRule(this.getSwitches().get(swId),this.table,SwitchCommands.DEFAULT_PRIORITY,match,new ArrayList<OFInstruction>(Arrays.asList(inst)));
+    	}
+    }
+    
+    /**
+     * This function remove rules for a host
+     */
+    private void removeRules(Host host) {
+    	
+    	Map<Long,Integer> portMap = routeMap.get(host.getSwitch().getId());
+    	
+    	//construct match criteria
+    	OFMatch match = new OFMatch();	
+    	match.setDataLayerType(OFMatch.ETH_TYPE_IPV4);
+    	match.setNetworkDestination(host.getIPv4Address());
+    	   	
+    	for(Long swId:portMap.keySet()) {
+    		SwitchCommands.removeRules(this.getSwitches().get(swId),this.table,match);
+    	}
+    }
 
     /**
      * Event handler called when a host joins the network.
@@ -123,7 +170,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 			
 			/*****************************************************************/
 			/* TODO: Update routing: add rules to route to new host          */
-			
+			installRules(host);
 			/*****************************************************************/
 		}
 	}
@@ -145,7 +192,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 		
 		/*********************************************************************/
 		/* TODO: Update routing: remove rules to route to host               */
-		
+		removeRules(host);
 		/*********************************************************************/
 	}
 
@@ -173,8 +220,56 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 		
 		/*********************************************************************/
 		/* TODO: Update routing: change rules to route to host               */
-		
+		removeRules(host);
+		installRules(host);	
 		/*********************************************************************/
+	}
+	
+	private void updateAll() {
+		for(Host h: this.getHosts()) {
+			removeRules(h);
+		}
+		bellman_ford();
+		for(Host h: this.getHosts()) {
+			installRules(h);
+		}
+	}
+	
+	/**
+	 * 
+	 */
+	private void bellman_ford() {
+		this.routeMap = new ConcurrentHashMap<Long,Map<Long, Integer>>();
+		Map<Long, IOFSwitch> sws = this.getSwitches();
+		List<Link> links = new ArrayList<>(this.getLinks());
+		for(Long dstSw: sws.keySet()) {
+			
+			Map<Long,Integer> dis = new ConcurrentHashMap<Long,Integer>();
+			Map<Long,Integer> pre = new ConcurrentHashMap<Long,Integer>();
+			
+			for(Long v: sws.keySet()) {
+				dis.put(v,Integer.MAX_VALUE);
+				pre.put(v,0);
+			}
+			dis.put(dstSw,0);
+			
+			for(int i = 1; i<sws.keySet().size();i++) {
+				for(Link lk: links) {
+					Long src = lk.getSrc();
+					Long dst = lk.getDst();
+					if(dis.get(src)+1<dis.get(dst)) {
+						dis.put(dst,dis.get(src)+1);
+						pre.put(dst,lk.getDstPort());
+					}
+					if(dis.get(dst)+1<dis.get(src)) {
+						dis.put(src,dis.get(dst)+1);
+						pre.put(src,lk.getSrcPort());
+					}
+				}
+			}
+			
+			routeMap.put(dstSw,pre);
+		}
 	}
 	
     /**
@@ -189,7 +284,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 		
 		/*********************************************************************/
 		/* TODO: Update routing: change routing rules for all hosts          */
-		
+		updateAll();
 		/*********************************************************************/
 	}
 
@@ -205,7 +300,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 		
 		/*********************************************************************/
 		/* TODO: Update routing: change routing rules for all hosts          */
-		
+		updateAll();
 		/*********************************************************************/
 	}
 
@@ -236,7 +331,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 		
 		/*********************************************************************/
 		/* TODO: Update routing: change routing rules for all hosts          */
-		
+		updateAll();
 		/*********************************************************************/
 	}
 
