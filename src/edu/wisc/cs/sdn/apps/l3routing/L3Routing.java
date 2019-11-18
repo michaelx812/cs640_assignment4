@@ -255,7 +255,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 			Map<Long,Integer> pre = new ConcurrentHashMap<Long,Integer>();
 			
 			for(Long v: sws.keySet()) {
-				dis.put(v,Integer.MAX_VALUE);
+				dis.put(v,Integer.MAX_VALUE/2);
 				pre.put(v,0);
 			}
 			dis.put(dstSw,0);
