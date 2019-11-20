@@ -199,7 +199,6 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 		/*       SYNs sent to a virtual IP, select a host and install        */
 		/*       connection-specific rules to rewrite IP and MAC addresses;  */
 		/*       ignore all other packets                                    */
-		
 		/*********************************************************************/
 		short etherType = ethPkt.getEtherType();
 		if(etherType==Ethernet.TYPE_ARP) {
