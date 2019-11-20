@@ -130,7 +130,9 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
     	match.setNetworkDestination(host.getIPv4Address());
     	   	
     	for(Long swId:portMap.keySet()) {
-    		//construct instruct
+    		if(swId == host.getSwitch().getId())
+    			continue;
+    		//construct instruction
         	OFAction act = new OFActionOutput(portMap.get(swId));
         	OFInstruction inst = new OFInstructionApplyActions(new ArrayList<OFAction>(Arrays.asList(act)));
     		
