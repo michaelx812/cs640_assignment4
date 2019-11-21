@@ -263,8 +263,8 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 						//match.setTransportDestination(tcp.getSourcePort());
 						//match.setTransportSource(tcp.getDestinationPort());
 						
-						setIP = new OFActionSetField(OFOXMFieldType.IPV4_SRC,dstVIp);
-						setMAC = new OFActionSetField(OFOXMFieldType.ETH_SRC,instances.get(dstVIp).getVirtualMAC());
+						setIP = new OFActionSetField(OFOXMFieldType.IPV4_SRC,nxtIp);
+						setMAC = new OFActionSetField(OFOXMFieldType.ETH_SRC,getHostMACAddress(nxtIp));
 						inst = new OFInstructionApplyActions(new ArrayList<OFAction>(Arrays.asList(setIP,setMAC)));
 						
 						SwitchCommands.installRule(sw,this.table,(short)(SwitchCommands.DEFAULT_PRIORITY+1),match,new ArrayList<OFInstruction>(Arrays.asList(inst)));
