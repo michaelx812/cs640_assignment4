@@ -253,7 +253,8 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 						OFAction setMAC = new OFActionSetField(OFOXMFieldType.ETH_DST,getHostMACAddress(nxtIp));
 						OFInstruction inst = new OFInstructionApplyActions(new ArrayList<OFAction>(Arrays.asList(setIP,setMAC)));
 						
-						SwitchCommands.installRule(sw,this.table,(short)(SwitchCommands.DEFAULT_PRIORITY+1),match,new ArrayList<OFInstruction>(Arrays.asList(inst)));
+						OFInstruction instL3 = new  OFInstructionGotoTable(L3Routing.table);
+						SwitchCommands.installRule(sw,this.table,(short)(SwitchCommands.DEFAULT_PRIORITY+1),match,new ArrayList<OFInstruction>(Arrays.asList(inst,instL3)));
 						
 						match = new OFMatch();
 						match.setDataLayerType(OFMatch.ETH_TYPE_IPV4);
@@ -263,11 +264,11 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 						//match.setTransportDestination(tcp.getSourcePort());
 						//match.setTransportSource(tcp.getDestinationPort());
 						
-						setIP = new OFActionSetField(OFOXMFieldType.IPV4_SRC,nxtIp);
-						setMAC = new OFActionSetField(OFOXMFieldType.ETH_SRC,getHostMACAddress(nxtIp));
+						setIP = new OFActionSetField(OFOXMFieldType.IPV4_SRC,dstVIp);
+						setMAC = new OFActionSetField(OFOXMFieldType.ETH_SRC,instances.get(dstVIp).getVirtualMAC());
 						inst = new OFInstructionApplyActions(new ArrayList<OFAction>(Arrays.asList(setIP,setMAC)));
 						
-						SwitchCommands.installRule(sw,this.table,(short)(SwitchCommands.DEFAULT_PRIORITY+1),match,new ArrayList<OFInstruction>(Arrays.asList(inst)));
+						SwitchCommands.installRule(sw,this.table,(short)(SwitchCommands.DEFAULT_PRIORITY+1),match,new ArrayList<OFInstruction>(Arrays.asList(inst,instL3)));
 					}
 				}
 			}
